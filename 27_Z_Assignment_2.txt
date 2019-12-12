@@ -1,0 +1,175 @@
+Create the Variables File
+In variables.tf create the following variables: app_label, mysql_tier, wordpress_tier, wordpress_version, mysql_password, and mysql_password. Set these default values:
+	app_label: wordpress
+	mysql_tier: mysql
+	wordpress_tier: frontend
+	wordpress_version: wordpress_version
+	mysql_password: P4sSw0rd0!
+
+Create the Main file
+Create a Kubernetes service resource called mysql_service. Within that resource:
+
+Build a metadata block with the following:
+	Set the name argument to wordpress-mysql.
+	Add a labels block with the app set to the app_label variable.
+
+Make a spec block, and add these two blocks and associated arguments to it:
+	A selector block:
+		Set the app argument to use the app_label variable.
+		Set the tier argument to use the mysql_tier variable.
+	A port block:
+		Set the port argument to port 3306.
+		Set the type argument to NodePort
+
+Create a Kubernetes deployment resource called mysql_deployment. In there:
+	Add a metadata block:
+		Set the name argument to wordpress-mysql.
+		Add a labels block:
+			Set an app argument with a value of app_label.
+	Add a spec block with the following:
+		Set the replicas to 1.
+		Add a selector block:
+			Inside of that, create a match_labels block with the following arguments:
+				Set app to use the app_label variable.
+				Set tier to use the mysql_tier variable.
+		Create a template block with these other additions:
+			A metadata block:
+				In here, create a labels block, with these arguments:
+					app set to the app_label variable
+					tier set to the mysql_tier variable
+			A spec block with:
+				A container block containing:
+					The name argument set to mysql.
+					The image argument set to mysql:5.7
+					Create an environment variable for MYSQL_ROOT_PASSWORD and set the value to the variable mysql_password.
+				Create a port block with the following arguments:
+					container_port set to 3306
+					name set to mysql
+
+Create a Kubernetes service resource called wordpress_service:
+	Add a metadata block:
+		Set the name argument to wordpress.
+		Add a labels block with the app set to the app_label variable.
+	Add a spec block with the following:
+		A selector block with these settings:
+			Set the app argument to use the app_label variable.
+			Set the tier argument to use the mysql_tier variable.
+		A port block with these settings:
+			Set the port argument to port 80.
+			Set the target_port argument to port 80.
+			Set the node_port argument to port 8080.
+		Set the spec block's type argument to NodePort.
+
+Create a Kubernetes deployment resource called wordpress_deployment:
+	Add a metadata block:
+		Set the name argument to wordpress.
+	Add a spec block with these settings:
+		Set the replicas to 1.
+		Add a selector block with:
+			A match_labels block having the following arguments:
+				Set the app argument to use the app_label variable.
+				Set the tier argument to use the wordpress_tier variable.
+		Add template block containing:
+			A metadata block with:
+				A labels block having the following arguments:
+					app set to the app_label variable
+					tier set to the wordpress_tier variable
+			A spec block with a container block containing:
+				The name argument set to wordpress
+				The image argument set to wordpress:
+					The tag will be set using the wordpress_version variable with -apache appended to the end of it.
+					Create an environment variable for WORDPRESS_DB_HOST and set the value to the variable wordpress-mysql.
+					Create another environment variable for WORDPRESS_DB_PASSWORD and set the value to the variable mysql_password.
+					Create a port block with the following arguments:
+						container_port set to 80
+						name set to wordpress
+
+
+Deploy the infrastructure
+	Initialize Terraform.
+	Validate the files.
+	Deploy the infrastructure.
+
+
+====================================================================================
+
+vi variables.tf
+
+variable "app_label" {
+  default = "wordpress"
+}
+variable "mysql_tier" {
+  default = "mysql"
+}
+variable "wordpress_tier" {
+  default = "frontend"
+}
+variable "wordpress_version" {
+  default = "wordpress_version"
+}
+variable "mysql_password" {
+  default = "P4sSw0rd0!"
+}
+
+
+
+
+
+
+
+
+
+
+resource "kubernetes_service" "mysql_service" {
+  metadata {
+    name = "wordpress-mysql"
+  }
+  spec {
+    selector {
+      app = "${kubernetes_deployment.mysql_deployment.spec.0.template.0.metadata.0.labels.app}"
+	  tier = "${var.}"
+    }
+    port {
+      port        = "2368"
+      target_port = "2368"
+      node_port   = "8080"
+    }
+
+    type = "NodePort"
+  }
+}
+
+resource "kubernetes_deployment" "mysql_deployment" {
+  metadata {
+    name = "wordpress-mysql"
+  }
+
+  spec {
+    replicas = "1"
+
+    selector {
+      match_labels {
+        app = "ghost-blog"
+      }
+    }
+
+    template {
+      metadata {
+        labels {
+          app = "${var.app_label}"
+		  tier = "${var.mysql_tier}"
+        }
+      }
+
+      spec {
+        container {
+          name  = "mysqlt"
+          image = "mysql:5.7"
+          port {
+            container_port = "2368"
+          }
+        }
+      }
+    }
+  }
+}

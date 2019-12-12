@@ -1,0 +1,225 @@
+Creating a Pod and Service
+In this lesson, we will create a pod and service using Terraform.
+
+Setup your environment:
+
+mkdir -p ~/terraform/service
+cd ~/terraform/service
+Create main.tf:
+
+vi main.tf
+main.tf contents:
+
+resource "kubernetes_service" "ghost_service" {
+  metadata {
+    name = "ghost-service"
+  }
+  spec {
+    selector {
+      app = "${kubernetes_pod.ghost_alpine.metadata.0.labels.app}"
+    }
+    port {
+      port = "2368"
+      target_port = "2368"
+      node_port = "8081"
+    }
+    type = "NodePort"
+  }
+}
+
+resource "kubernetes_pod" "ghost_alpine" {
+  metadata {
+    name = "ghost-alpine"
+    labels {
+      app = "ghost-blog"
+    }
+  }
+
+  spec {
+    container {
+      image = "ghost:alpine"
+      name  = "ghost-alpine"
+      port  {
+        container_port = "2368"
+      }
+    }
+  }
+}
+Initialize Terraform:
+
+terraform init
+Validate the files:
+
+terraform validate
+Plan the deployment:
+
+terraform plan
+Deploy the pod:
+
+terraform apply -auto-approve
+List the Pods:
+
+kubectl get pods
+List the Services:
+
+kubectl get services
+Reset the environment:
+
+terraform destroy -auto-approve
+
+---------------------------------------------------------
+---------------------------------------------------------
+
+
+master $ terraform init
+
+Initializing provider plugins...
+- Checking for available provider plugins on https://releases.hashicorp.com...
+- Downloading plugin for provider "kubernetes" (1.10.0)...
+
+Terraform has been successfully initialized!
+
+master $ terraform validate
+master $
+
+
+master $ terraform plan
+Refreshing Terraform state in-memory prior to plan...
+The refreshed state will be used to calculate this plan, but will not be
+persisted to local or remote state storage.
+
+
+------------------------------------------------------------------------
+
+An execution plan has been generated and is shown below.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  + kubernetes_pod.ghost_alpine
+      id:                                          <computed>
+      metadata.#:                                  "1"
+      metadata.0.generation:                       <computed>
+      metadata.0.labels.%:                         "1"
+      metadata.0.labels.app:                       "ghost-blog"
+      metadata.0.name:                             "ghost-alpine"
+      metadata.0.namespace:                        "default"
+      metadata.0.resource_version:                 <computed>
+      metadata.0.self_link:                        <computed>
+      metadata.0.uid:                              <computed>
+      spec.#:                                      "1"
+      spec.0.automount_service_account_token:      "false"
+      spec.0.container.#:                          "1"
+      spec.0.container.0.image:                    "ghost:alpine"
+      spec.0.container.0.image_pull_policy:        <computed>
+      spec.0.container.0.name:                     "ghost-alpine"
+      spec.0.container.0.port.#:                   "1"
+      spec.0.container.0.port.0.container_port:    "2368"
+      spec.0.container.0.port.0.protocol:          "TCP"
+      spec.0.container.0.resources.#:              <computed>
+      spec.0.container.0.stdin:                    "false"
+      spec.0.container.0.stdin_once:               "false"
+      spec.0.container.0.termination_message_path: "/dev/termination-log"
+      spec.0.container.0.tty:                      "false"
+      spec.0.container.0.volume_mount.#:           <computed>
+      spec.0.dns_policy:                           "ClusterFirst"
+      spec.0.host_ipc:                             "false"
+      spec.0.host_network:                         "false"
+      spec.0.host_pid:                             "false"
+      spec.0.hostname:                             <computed>
+      spec.0.image_pull_secrets.#:                 <computed>
+      spec.0.node_name:                            <computed>
+      spec.0.restart_policy:                       "Always"
+      spec.0.service_account_name:                 <computed>
+      spec.0.share_process_namespace:              "false"
+      spec.0.termination_grace_period_seconds:     "30"
+      spec.0.volume.#:                             <computed>
+
+  + kubernetes_service.ghost_service
+      id:                                          <computed>
+      load_balancer_ingress.#:                     <computed>
+      metadata.#:                                  "1"
+      metadata.0.generation:                       <computed>
+      metadata.0.name:                             "ghost-service"
+      metadata.0.namespace:                        "default"
+      metadata.0.resource_version:                 <computed>
+      metadata.0.self_link:                        <computed>
+      metadata.0.uid:                              <computed>
+      spec.#:                                      "1"
+      spec.0.cluster_ip:                           <computed>
+      spec.0.external_traffic_policy:              <computed>
+      spec.0.port.#:                               "1"
+      spec.0.port.0.node_port:                     "8081"
+      spec.0.port.0.port:                          "2368"
+      spec.0.port.0.protocol:                      "TCP"
+      spec.0.port.0.target_port:                   "2368"
+      spec.0.publish_not_ready_addresses:          "false"
+      spec.0.selector.%:                           "1"
+      spec.0.selector.app:                         "ghost-blog"
+      spec.0.session_affinity:                     "None"
+      spec.0.type:                                 "NodePort"
+
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+------------------------------------------------------------------------
+
+Note: You didn't specify an "-out" parameter to save this plan, so Terraform
+can't guarantee that exactly these actions will be performed if
+"terraform apply" is subsequently run.
+
+master $ terraform apply -auto-approve
+kubernetes_pod.ghost_alpine: Refreshing state... (ID: default/ghost-alpine)
+kubernetes_service.ghost_service: Creating...
+  load_balancer_ingress.#:            "" => "<computed>"
+  metadata.#:                         "" => "1"
+  metadata.0.generation:              "" => "<computed>"
+  metadata.0.name:                    "" => "ghost-service"
+  metadata.0.namespace:               "" => "default"
+  metadata.0.resource_version:        "" => "<computed>"
+  metadata.0.self_link:               "" => "<computed>"
+  metadata.0.uid:                     "" => "<computed>"
+  spec.#:                             "" => "1"
+  spec.0.cluster_ip:                  "" => "<computed>"
+  spec.0.external_traffic_policy:     "" => "<computed>"
+  spec.0.port.#:                      "" => "1"
+  spec.0.port.0.node_port:            "" => "30031"
+  spec.0.port.0.port:                 "" => "2368"
+  spec.0.port.0.protocol:             "" => "TCP"
+  spec.0.port.0.target_port:          "" => "2368"
+  spec.0.publish_not_ready_addresses: "" => "false"
+  spec.0.selector.%:                  "" => "1"
+  spec.0.selector.app:                "" => "ghost-blog"
+  spec.0.session_affinity:            "" => "None"
+  spec.0.type:                        "" => "NodePort"
+kubernetes_service.ghost_service: Creation complete after 0s (ID: default/ghost-service)
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+
+master $ kubectl get services
+NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+ghost-service   NodePort    10.101.129.184   <none>        2368:30031/TCP   52s
+kubernetes      ClusterIP   10.96.0.1        <none>        443/TCP          55m
+master $
+
+
+master $ kubectl get services
+NAME            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+ghost-service   NodePort    10.101.129.184   <none>        2368:30031/TCP   52s
+kubernetes      ClusterIP   10.96.0.1        <none>        443/TCP          55m
+master $ terraform destroy -auto-approve
+kubernetes_pod.ghost_alpine: Refreshing state... (ID: default/ghost-alpine)
+kubernetes_service.ghost_service: Refreshing state... (ID: default/ghost-service)
+kubernetes_service.ghost_service: Destroying... (ID: default/ghost-service)
+kubernetes_service.ghost_service: Destruction complete after 1s
+kubernetes_pod.ghost_alpine: Destroying... (ID: default/ghost-alpine)
+kubernetes_pod.ghost_alpine: Destruction complete after 3s
+
+Destroy complete! Resources: 2 destroyed.
+
+master $ kubectl get services
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   57m
+master $
